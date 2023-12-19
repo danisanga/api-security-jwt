@@ -19,9 +19,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
+
+    private static final Logger LOGGER = Logger.getLogger(JwtAuthorizationFilter.class.getName());
 
     private final JwtUtil jwtUtil;
     private final ObjectMapper mapper;
@@ -30,35 +34,38 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
         this.mapper = mapper;
     }
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(final HttpServletRequest request,
+                                    final HttpServletResponse response,
+                                    final FilterChain filterChain) throws ServletException, IOException {
         Map<String, Object> errorDetails = new HashMap<>();
 
         try {
-            String accessToken = jwtUtil.resolveToken(request);
-            if (accessToken == null ) {
+            final String accessToken = jwtUtil.resolveToken(request);
+            if (accessToken == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
-            System.out.println("token : " + accessToken);
-            Claims claims = jwtUtil.resolveClaims(request);
+            LOGGER.log(Level.INFO, () -> String.format("Request Token : %s", accessToken));
 
-            if(claims != null && jwtUtil.validateClaims(claims)){
-                String email = claims.getSubject();
-                System.out.println("email : "+email);
-                Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(email,"",new ArrayList<>());
+            final Claims claims = jwtUtil.resolveClaims(request);
+            if (claims != null && jwtUtil.validateClaims(claims)) {
+                final String email = claims.getSubject();
+                LOGGER.log(Level.INFO, () -> String.format("Request Email : %s", email));
+
+                final Authentication authentication =
+                        new UsernamePasswordAuthenticationToken(email, "", new ArrayList<>());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             errorDetails.put("message", "Authentication Error");
-            errorDetails.put("details",e.getMessage());
+            errorDetails.put("details", e.getMessage());
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
             mapper.writeValue(response.getWriter(), errorDetails);
-
         }
         filterChain.doFilter(request, response);
     }
