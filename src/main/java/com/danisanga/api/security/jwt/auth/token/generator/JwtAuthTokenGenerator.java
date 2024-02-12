@@ -12,5 +12,5 @@ public interface JwtAuthTokenGenerator extends AuthTokenGenerator {
 
     String resolveToken(final HttpServletRequest httpServletRequest);
     Claims resolveClaims(final HttpServletRequest httpServletRequest);
-    boolean validateClaims(Claims claims) throws AuthenticationException;
+    boolean areClaimsValid(Claims claims) throws AuthenticationException;
 }

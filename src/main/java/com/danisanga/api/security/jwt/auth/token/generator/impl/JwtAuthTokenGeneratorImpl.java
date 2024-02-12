@@ -90,7 +90,7 @@ public class JwtAuthTokenGeneratorImpl implements JwtAuthTokenGenerator {
     /**
      * {@inheritDoc}
      */
-    public boolean validateClaims(Claims claims) throws AuthenticationException {
+    public boolean areClaimsValid(Claims claims) throws AuthenticationException {
         try {
             return claims.getExpiration().after(new Date());
         } catch (Exception e) {

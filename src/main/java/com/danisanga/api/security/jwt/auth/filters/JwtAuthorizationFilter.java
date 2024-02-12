@@ -1,5 +1,6 @@
 package com.danisanga.api.security.jwt.auth.filters;
 
+import com.danisanga.api.security.jwt.auth.token.generator.JwtAuthTokenGenerator;
 import com.danisanga.api.security.jwt.auth.token.generator.impl.JwtAuthTokenGeneratorImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
@@ -15,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.naming.AuthenticationException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,37 +24,49 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Spring filter that ensures there is an existing token before make any request.
+ */
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private static final Logger LOGGER = Logger.getLogger(JwtAuthorizationFilter.class.getName());
 
-    private final JwtAuthTokenGeneratorImpl jwtAuthTokenGeneratorImpl;
+    private final JwtAuthTokenGenerator jwtAuthTokenGenerator;
     private final ObjectMapper mapper;
 
-    public JwtAuthorizationFilter(JwtAuthTokenGeneratorImpl jwtAuthTokenGeneratorImpl, ObjectMapper mapper) {
-        this.jwtAuthTokenGeneratorImpl = jwtAuthTokenGeneratorImpl;
+    /**
+     * Default constructor.
+     *
+     * @param jwtAuthTokenGenerator injected
+     * @param mapper                injected
+     */
+    public JwtAuthorizationFilter(final JwtAuthTokenGeneratorImpl jwtAuthTokenGenerator, final ObjectMapper mapper) {
+        this.jwtAuthTokenGenerator = jwtAuthTokenGenerator;
         this.mapper = mapper;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected void doFilterInternal(final HttpServletRequest request,
-                                    final HttpServletResponse response,
+    protected void doFilterInternal(final HttpServletRequest httpServletRequest,
+                                    final HttpServletResponse httpServletResponse,
                                     final FilterChain filterChain) throws ServletException, IOException {
-        Map<String, Object> errorDetails = new HashMap<>();
 
         try {
-            final String accessToken = jwtAuthTokenGeneratorImpl.resolveToken(request);
+            final String accessToken = jwtAuthTokenGenerator.resolveToken(httpServletRequest);
+            // TODO - DSG - Should we throw an exception? Maybe it's thrown in jwtAuthTokenGenerator.resolveToken(...).
             if (accessToken == null) {
-                filterChain.doFilter(request, response);
+                filterChain.doFilter(httpServletRequest, httpServletResponse);
                 return;
             }
-            LOGGER.log(Level.INFO, () -> String.format("Request Token : %s", accessToken));
 
-            final Claims claims = jwtAuthTokenGeneratorImpl.resolveClaims(request);
-            if (claims != null && jwtAuthTokenGeneratorImpl.validateClaims(claims)) {
+            final Claims claims = jwtAuthTokenGenerator.resolveClaims(httpServletRequest);
+            if (areClaimsValid(claims)) {
                 final String email = claims.getSubject();
                 LOGGER.log(Level.INFO, () -> String.format("Request Email : %s", email));
+                LOGGER.log(Level.INFO, () -> String.format("Request Token : %s", accessToken));
 
                 final Authentication authentication =
                         new UsernamePasswordAuthenticationToken(email, "", new ArrayList<>());
@@ -60,13 +74,22 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
-            errorDetails.put("message", "Authentication Error");
-            errorDetails.put("details", e.getMessage());
-            response.setStatus(HttpStatus.FORBIDDEN.value());
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-            mapper.writeValue(response.getWriter(), errorDetails);
+            httpServletResponse.setStatus(HttpStatus.FORBIDDEN.value());
+            httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            mapper.writeValue(httpServletResponse.getWriter(), populateErrorDetails(e.getMessage()));
         }
-        filterChain.doFilter(request, response);
+
+        filterChain.doFilter(httpServletRequest, httpServletResponse);
+    }
+
+    private boolean areClaimsValid(final Claims claims) throws AuthenticationException {
+        return claims != null && jwtAuthTokenGenerator.areClaimsValid(claims);
+    }
+
+    private Map<String, Object> populateErrorDetails(final String errorMessage) {
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("Error cause", "Authentication Error");
+        errorDetails.put("Error message", errorMessage);
+        return errorDetails;
     }
 }
