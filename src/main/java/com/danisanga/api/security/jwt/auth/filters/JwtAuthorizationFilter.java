@@ -1,6 +1,6 @@
 package com.danisanga.api.security.jwt.auth.filters;
 
-import com.danisanga.api.security.jwt.auth.JwtUtil;
+import com.danisanga.api.security.jwt.auth.token.generator.impl.JwtAuthTokenGeneratorImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -27,11 +27,11 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private static final Logger LOGGER = Logger.getLogger(JwtAuthorizationFilter.class.getName());
 
-    private final JwtUtil jwtUtil;
+    private final JwtAuthTokenGeneratorImpl jwtAuthTokenGeneratorImpl;
     private final ObjectMapper mapper;
 
-    public JwtAuthorizationFilter(JwtUtil jwtUtil, ObjectMapper mapper) {
-        this.jwtUtil = jwtUtil;
+    public JwtAuthorizationFilter(JwtAuthTokenGeneratorImpl jwtAuthTokenGeneratorImpl, ObjectMapper mapper) {
+        this.jwtAuthTokenGeneratorImpl = jwtAuthTokenGeneratorImpl;
         this.mapper = mapper;
     }
 
@@ -42,15 +42,15 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         Map<String, Object> errorDetails = new HashMap<>();
 
         try {
-            final String accessToken = jwtUtil.resolveToken(request);
+            final String accessToken = jwtAuthTokenGeneratorImpl.resolveToken(request);
             if (accessToken == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
             LOGGER.log(Level.INFO, () -> String.format("Request Token : %s", accessToken));
 
-            final Claims claims = jwtUtil.resolveClaims(request);
-            if (claims != null && jwtUtil.validateClaims(claims)) {
+            final Claims claims = jwtAuthTokenGeneratorImpl.resolveClaims(request);
+            if (claims != null && jwtAuthTokenGeneratorImpl.validateClaims(claims)) {
                 final String email = claims.getSubject();
                 LOGGER.log(Level.INFO, () -> String.format("Request Email : %s", email));
 

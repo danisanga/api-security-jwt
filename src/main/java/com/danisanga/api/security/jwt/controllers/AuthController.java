@@ -1,6 +1,6 @@
 package com.danisanga.api.security.jwt.controllers;
 
-import com.danisanga.api.security.jwt.auth.JwtUtil;
+import com.danisanga.api.security.jwt.auth.token.generator.impl.JwtAuthTokenGeneratorImpl;
 import com.danisanga.api.security.jwt.models.User;
 import com.danisanga.api.security.jwt.models.requests.LoginRequest;
 import com.danisanga.api.security.jwt.models.responses.ErrorResponse;
@@ -24,10 +24,10 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
 
 
-    private JwtUtil jwtUtil;
-    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
+    private JwtAuthTokenGeneratorImpl jwtAuthTokenGeneratorImpl;
+    public AuthController(AuthenticationManager authenticationManager, JwtAuthTokenGeneratorImpl jwtAuthTokenGeneratorImpl) {
         this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
+        this.jwtAuthTokenGeneratorImpl = jwtAuthTokenGeneratorImpl;
 
     }
 
@@ -40,7 +40,7 @@ public class AuthController {
                     authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getEmail(), loginReq.getPassword()));
             String email = authentication.getName();
             User user = new User(email,"");
-            String token = jwtUtil.createToken(user);
+            String token = jwtAuthTokenGeneratorImpl.generateToken(user);
             LoginResponse loginRes = new LoginResponse(email,token);
 
             return ResponseEntity.ok(loginRes);
