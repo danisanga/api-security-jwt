@@ -1,4 +1,4 @@
-package com.danisanga.api.security.jwt.auth.filters;
+package com.danisanga.api.security.jwt.filters;
 
 import com.danisanga.api.security.jwt.auth.token.generator.JwtAuthTokenGenerator;
 import com.danisanga.api.security.jwt.auth.token.generator.impl.JwtAuthTokenGeneratorImpl;
@@ -55,14 +55,13 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                                     final FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            final String accessToken = jwtAuthTokenGenerator.resolveToken(httpServletRequest);
-            // TODO - DSG - Should we throw an exception? Maybe it's thrown in jwtAuthTokenGenerator.resolveToken(...).
+            final String accessToken = jwtAuthTokenGenerator.getToken(httpServletRequest);
             if (accessToken == null) {
                 filterChain.doFilter(httpServletRequest, httpServletResponse);
                 return;
             }
 
-            final Claims claims = jwtAuthTokenGenerator.resolveClaims(httpServletRequest);
+            final Claims claims = jwtAuthTokenGenerator.getClaims(httpServletRequest);
             if (areClaimsValid(claims)) {
                 final String email = claims.getSubject();
                 LOGGER.log(Level.INFO, () -> String.format("Request Email : %s", email));

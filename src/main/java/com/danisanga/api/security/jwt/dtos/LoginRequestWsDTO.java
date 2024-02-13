@@ -1,10 +1,10 @@
-package com.danisanga.api.security.jwt.models;
+package com.danisanga.api.security.jwt.dtos;
 
-public class User {
+public class LoginRequestWsDTO {
     private String email;
     private String password;
 
-    public User(String email, String password) {
+    public LoginRequestWsDTO(String email, String password) {
         this.email = email;
         this.password = password;
     }

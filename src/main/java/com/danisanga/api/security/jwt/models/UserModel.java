@@ -1,10 +1,10 @@
-package com.danisanga.api.security.jwt.models.requests;
+package com.danisanga.api.security.jwt.models;
 
-public class LoginRequest {
+public class UserModel {
     private String email;
     private String password;
 
-    public LoginRequest(String email, String password) {
+    public UserModel(final String email, final String password) {
         this.email = email;
         this.password = password;
     }

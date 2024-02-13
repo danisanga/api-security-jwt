@@ -1,10 +1,10 @@
-package com.danisanga.api.security.jwt.models.responses;
+package com.danisanga.api.security.jwt.dtos.responses;
 
-public class LoginResponse {
+public class LoginResponseWsDTO {
     private String email;
     private String token;
 
-    public LoginResponse(String email, String token) {
+    public LoginResponseWsDTO(final String email, final String token) {
         this.email = email;
         this.token = token;
     }

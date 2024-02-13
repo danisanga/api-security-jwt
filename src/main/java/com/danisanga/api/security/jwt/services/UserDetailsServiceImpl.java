@@ -1,7 +1,8 @@
 package com.danisanga.api.security.jwt.services;
 
-import com.danisanga.api.security.jwt.models.User;
+import com.danisanga.api.security.jwt.models.UserModel;
 import com.danisanga.api.security.jwt.repositories.UserRepository;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,15 +20,21 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        final User user = userRepository.findUserByEmail(email);
-        List<String> roles = new ArrayList<>();
-        roles.add("USER");
-        return org.springframework.security.core.userdetails.User.builder()
-                        .username(user.getEmail())
-                        .password(user.getPassword())
-                        .roles(roles.toArray(new String[0]))
-                        .build();
+        final UserModel userModel = userRepository.findUserByEmail(email);
+        final List<String> roles = getRoles();
+        return User.builder()
+                .username(userModel.getEmail())
+                .password(userModel.getPassword())
+                .roles(roles.toArray(new String[0]))
+                .build();
+    }
+
+    private List<String> getRoles() {
+        return List.of("USER");
     }
 }

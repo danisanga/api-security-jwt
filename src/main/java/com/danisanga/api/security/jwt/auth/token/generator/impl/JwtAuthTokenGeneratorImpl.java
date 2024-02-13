@@ -1,7 +1,7 @@
 package com.danisanga.api.security.jwt.auth.token.generator.impl;
 
 import com.danisanga.api.security.jwt.auth.token.generator.JwtAuthTokenGenerator;
-import com.danisanga.api.security.jwt.models.User;
+import com.danisanga.api.security.jwt.models.UserModel;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtParser;
@@ -13,6 +13,8 @@ import javax.crypto.SecretKey;
 import javax.naming.AuthenticationException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * JWT authentication token generator class.
@@ -25,12 +27,14 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 public class JwtAuthTokenGeneratorImpl implements JwtAuthTokenGenerator {
+
+    private static final Logger LOGGER = Logger.getLogger(JwtAuthTokenGeneratorImpl.class.getName());
+
     private static final SecretKey KEY = Jwts.SIG.HS256.key().build();
 
     private static final long ACCESS_TOKEN_VALIDITY = 60*60*1_000L;
     private static final String TOKEN_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
-
 
     private final JwtParser jwtParser;
 
@@ -45,8 +49,8 @@ public class JwtAuthTokenGeneratorImpl implements JwtAuthTokenGenerator {
      * {@inheritDoc}
      */
     @Override
-    public String generateToken(User user) {
-        final Claims claims = Jwts.claims().subject(user.getEmail()).build();
+    public String generateToken(UserModel userModel) {
+        final Claims claims = Jwts.claims().subject(userModel.getEmail()).build();
         final Date tokenCreateTime = new Date();
         final Date tokenValidity = getTokenValidityDate(tokenCreateTime);
         return Jwts.builder()
@@ -59,11 +63,13 @@ public class JwtAuthTokenGeneratorImpl implements JwtAuthTokenGenerator {
     /**
      * {@inheritDoc}
      */
-    public Claims resolveClaims(final HttpServletRequest httpServletRequest) {
+    public Claims getClaims(final HttpServletRequest httpServletRequest) {
         try {
-            final String token = resolveToken(httpServletRequest);
+            final String token = getToken(httpServletRequest);
             if (token == null) {
-                httpServletRequest.setAttribute("Bearer token is null", "Bearer token cannot be null for authentication");
+                httpServletRequest.setAttribute(
+                        "Bearer token is null",
+                        "There are no Claims due to token is null");
             }
             return parseJwtClaims(token);
         } catch (ExpiredJwtException ex) {
@@ -78,7 +84,7 @@ public class JwtAuthTokenGeneratorImpl implements JwtAuthTokenGenerator {
     /**
      * {@inheritDoc}
      */
-    public String resolveToken(HttpServletRequest httpServletRequest) {
+    public String getToken(final HttpServletRequest httpServletRequest) {
 
         final String bearerToken = httpServletRequest.getHeader(TOKEN_HEADER);
         if (bearerToken != null && bearerToken.startsWith(TOKEN_PREFIX)) {
@@ -99,7 +105,9 @@ public class JwtAuthTokenGeneratorImpl implements JwtAuthTokenGenerator {
     }
 
     private Date getTokenValidityDate(final Date tokenCreateTime) {
-        return new Date(tokenCreateTime.getTime() + TimeUnit.MINUTES.toMillis(ACCESS_TOKEN_VALIDITY));
+        final Date tokenValidityDate = new Date(tokenCreateTime.getTime() + TimeUnit.MINUTES.toMillis(ACCESS_TOKEN_VALIDITY));
+        LOGGER.log(Level.INFO, () -> String.format("Token validity date : %s", tokenValidityDate));
+        return tokenValidityDate;
     }
 
     private Claims parseJwtClaims(String token) {
