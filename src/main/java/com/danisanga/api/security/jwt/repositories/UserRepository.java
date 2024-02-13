@@ -1,14 +1,14 @@
 package com.danisanga.api.security.jwt.repositories;
 
-import com.danisanga.api.security.jwt.models.User;
-import org.springframework.stereotype.Repository;
+import com.danisanga.api.security.jwt.models.UserModel;
 
-@Repository
-public class UserRepository {
-    public User findUserByEmail(String email){
-        User user = new User(email,"123456");
-        user.setFirstName("FirstName");
-        user.setLastName("LastName");
-        return user;
-    }
+public interface UserRepository {
+
+    /**
+     * Find user by email.
+     *
+     * @param email email address
+     * @return  User object for requesting email.
+     */
+    UserModel findUserByEmail(String email);
 }

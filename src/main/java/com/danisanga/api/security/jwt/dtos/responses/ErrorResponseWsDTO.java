@@ -1,12 +1,12 @@
-package com.danisanga.api.security.jwt.models.responses;
+package com.danisanga.api.security.jwt.dtos.responses;
 
 import org.springframework.http.HttpStatus;
 
-public class ErrorResponse {
-    HttpStatus httpStatus;
-    String message;
+public class ErrorResponseWsDTO {
+    private HttpStatus httpStatus;
+    private String message;
 
-    public ErrorResponse(HttpStatus httpStatus, String message) {
+    public ErrorResponseWsDTO(final HttpStatus httpStatus, final String message) {
         this.httpStatus = httpStatus;
         this.message = message;
     }

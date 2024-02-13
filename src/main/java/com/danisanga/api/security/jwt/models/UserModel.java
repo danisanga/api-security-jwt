@@ -1,12 +1,10 @@
 package com.danisanga.api.security.jwt.models;
 
-public class User {
+public class UserModel {
     private String email;
     private String password;
-    private String firstName;
-    private String lastName;
 
-    public User(String email, String password) {
+    public UserModel(final String email, final String password) {
         this.email = email;
         this.password = password;
     }
@@ -25,21 +23,5 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
     }
 }

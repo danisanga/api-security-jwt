@@ -1,56 +1,64 @@
 package com.danisanga.api.security.jwt.controllers;
 
-import com.danisanga.api.security.jwt.auth.JwtUtil;
-import com.danisanga.api.security.jwt.models.User;
-import com.danisanga.api.security.jwt.models.requests.LoginRequest;
-import com.danisanga.api.security.jwt.models.responses.ErrorResponse;
-import com.danisanga.api.security.jwt.models.responses.LoginResponse;
+import com.danisanga.api.security.jwt.auth.token.generator.JwtAuthTokenGenerator;
+import com.danisanga.api.security.jwt.auth.token.generator.impl.JwtAuthTokenGeneratorImpl;
+import com.danisanga.api.security.jwt.models.UserModel;
+import com.danisanga.api.security.jwt.dtos.LoginRequestWsDTO;
+import com.danisanga.api.security.jwt.dtos.responses.ErrorResponseWsDTO;
+import com.danisanga.api.security.jwt.dtos.responses.LoginResponseWsDTO;
+import io.jsonwebtoken.lang.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 @RequestMapping("/rest/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final JwtAuthTokenGenerator jwtAuthTokenGenerator;
 
-
-    private JwtUtil jwtUtil;
-    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
+    /**
+     * Default constructor.
+     *
+     * @param authenticationManager injected
+     * @param jwtAuthTokenGenerator injected
+     */
+    public AuthController(final AuthenticationManager authenticationManager,
+                          final JwtAuthTokenGeneratorImpl jwtAuthTokenGenerator) {
         this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
+        this.jwtAuthTokenGenerator = jwtAuthTokenGenerator;
 
     }
 
-    @ResponseBody
-    @RequestMapping(value = "/login",method = RequestMethod.POST)
-    public ResponseEntity login(@RequestBody LoginRequest loginReq)  {
+    @PostMapping(value = "/login")
+    public ResponseEntity<Object> login(@RequestBody LoginRequestWsDTO loginRequestWsDTO)  {
 
         try {
-            Authentication authentication =
-                    authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getEmail(), loginReq.getPassword()));
-            String email = authentication.getName();
-            User user = new User(email,"");
-            String token = jwtUtil.createToken(user);
-            LoginResponse loginRes = new LoginResponse(email,token);
+            final Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequestWsDTO.getEmail(),
+                            loginRequestWsDTO.getPassword()));
 
+            final String email = authentication.getName();
+            final UserModel userModel = new UserModel(email, Strings.EMPTY);
+            final String token = jwtAuthTokenGenerator.generateToken(userModel);
+            final LoginResponseWsDTO loginRes = new LoginResponseWsDTO(email,token);
             return ResponseEntity.ok(loginRes);
 
-        }catch (BadCredentialsException e){
-            ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST,"Invalid username or password");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }catch (final BadCredentialsException exception){
+            final ErrorResponseWsDTO errorResponseWsDTO = new ErrorResponseWsDTO(HttpStatus.BAD_REQUEST,"Invalid username or password");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponseWsDTO);
         }catch (Exception e){
-            ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            final ErrorResponseWsDTO errorResponseWsDTO = new ErrorResponseWsDTO(HttpStatus.BAD_REQUEST, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponseWsDTO);
         }
     }
 }
